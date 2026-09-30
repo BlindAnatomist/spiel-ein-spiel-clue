@@ -1,0 +1,35 @@
+{
+  "name": "@spiel-ein-spiel/mystery",
+  "version": "0.1.0",
+  "description": "Presentation-independent, blind-first closed-system deduction engine",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.ts",
+    "check": "npm run typecheck && npm test",
+    "simulate": "node src/cli.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BlindAnatomist/spiel-ein-spiel-clue.git"
+  },
+  "keywords": [],
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/BlindAnatomist/spiel-ein-spiel-clue/issues"
+  },
+  "homepage": "https://github.com/BlindAnatomist/spiel-ein-spiel-clue#readme",
+  "devDependencies": {
+    "@types/node": "26.6.3",
+    "typescript": "7.0.2"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./referee": "./src/referee.ts",
+    "./simulation": "./src/simulation.ts",
+    "./content": "./src/content.ts"
+  }
+}
