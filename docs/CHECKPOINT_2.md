@@ -1,6 +1,8 @@
 # Checkpoint 2: guided first game and browser play
 
-Branch: `feat/guided-browser-checkpoint`. Base engine: `fd15c90`. See CONTINUATION.md for delivery status; this record is finalized after deployment and remote CI verification.
+Status: implemented, automatically tested, and published. Real iPhone VoiceOver acceptance remains pending.
+
+Branch: `feat/guided-browser-checkpoint`. Base engine: `fd15c90`. Implementation commit: `6dda8834b083260d0c091001d4c8a6dec6019ede`. Pull request: https://github.com/BlindAnatomist/spiel-ein-spiel-clue/pull/1. Main remains unchanged pending review.
 
 ## Implemented
 
@@ -49,6 +51,18 @@ npm run simulate -- checkpoint-1
 ```
 
 Tests cover the existing engine, both practice reveal paths, all lesson restore positions, normal play, human refutation interrupts, failure duty, observation privacy at current position, save corruption, duplicate actions, semantic controls, accessible names, keyboard operation, focus return, canceled accusations, history and repeat invariance, and mobile text enlargement. Browser tests execute the production build.
+
+Verified results: 27 engine/host tests passed locally and in GitHub Actions; 9 Chromium browser tests passed locally; all 18 browser tests (9 Chromium, 9 WebKit) passed in GitHub Actions. Strict TypeScript checking, production build, and the original reference simulation passed. Automated axe checks passed on the tested menu, help dialog, and suggestion form; keyboard, focus return, and 200% text reflow checks passed. Local WebKit dependencies could not be installed because this container disallowed the required system operations; the remote Ubuntu job installed and ran WebKit successfully.
+
+Verified remote run: https://github.com/BlindAnatomist/spiel-ein-spiel-clue/actions/runs/36654663858, conclusion `success`, on implementation commit `6dda883`.
+
+## Preview publication
+
+Address: https://deduction-practice.blind-anatomist.chatgpt.site
+
+The isolated owner-private Site reported deployment `succeeded` at 2026-09-30 01:22:23 UTC. Initial published application source: `6dda8834b083260d0c091001d4c8a6dec6019ede`. Deployment: `appgdep_6abc6446dd348191814464cdee7bbd3f`. The subsequent delivery-record commit changes documentation only and retains the same tested application output. No other application was changed. Hosting source is a publishing mirror; this GitHub repository remains authoritative.
+
+Choose Learn to play, then Continue. If a saved practice exists, choose Resume saved case or explicitly replace it. Signing into the owner’s ChatGPT account may be required.
 
 Automation does not establish real iPhone VoiceOver usability. No user approval or real-device testing is claimed. See IPHONE_ACCEPTANCE.md.
 

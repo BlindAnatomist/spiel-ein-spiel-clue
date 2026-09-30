@@ -2,7 +2,11 @@
 
 This repository is the authoritative project record. The existing headless engine now supports a guided first game, ordinary human play, and manually stepped bot observation. Provisional labels stay outside the engine. All narration is accessible text; there is no separate speech engine.
 
-Choose Learn to play for the interactive practice. It teaches the rules while you use the same movement, suggestion, response, notebook and accusation controls as ordinary play. Deployment status and the preview address are recorded in docs/CONTINUATION.md.
+Choose Learn to play for the interactive practice. It teaches the rules while you use the same movement, suggestion, response, notebook and accusation controls as ordinary play.
+
+[Open the isolated preview](https://deduction-practice.blind-anatomist.chatgpt.site)
+
+Preview publication is verified. Automated tests pass; real iPhone VoiceOver acceptance is pending. The preview is private to its owner and may require signing into the same ChatGPT account.
 
 ## Run
 
