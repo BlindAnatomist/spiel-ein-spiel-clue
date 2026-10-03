@@ -1,6 +1,8 @@
 # Original deduction game: headless checkpoint 1
 
-This repository is the authoritative project record. The first checkpoint implements an original-world-ready, presentation-independent deduction engine. All current content IDs are abstract placeholders. There is no playable browser interface yet.
+This repository is the authoritative project record. The first checkpoint implements an original-world-ready, presentation-independent deduction engine. All current content IDs are abstract placeholders. There is no playable browser interface in this headless checkpoint.
+
+As of 2026-10-03, the guided browser checkpoint is implemented separately on `feat/guided-browser-checkpoint` at `be4f0c1667ad4db4c9b297d82ddc84912455696c`. [PR #1](https://github.com/BlindAnatomist/spiel-ein-spiel-clue/pull/1) is open and unmerged; main remains the headless foundation. See the [browser continuation record](https://github.com/BlindAnatomist/spiel-ein-spiel-clue/blob/be4f0c1667ad4db4c9b297d82ddc84912455696c/docs/CONTINUATION.md) before planning further work. Automated verification and preview publication are recorded there; actual iPhone VoiceOver acceptance remains pending.
 
 ## Run
 
@@ -16,8 +18,9 @@ npm run simulate -- checkpoint-1
 
 ## Read next
 
+- [Agent entrypoint and authority map](AGENTS.md)
 - [Foundation and contracts](docs/FOUNDATION.md)
-- [Checkpoint record and next work](docs/CHECKPOINT_1.md)
+- [Headless checkpoint record (historical next steps)](docs/CHECKPOINT_1.md)
 - `src/types.ts`: structured actions, events, views, notebook, policy contract
 - `src/referee.ts`: trusted rules authority and deterministic replay
 - `src/bot.ts`: independent baseline policy
