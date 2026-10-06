@@ -25,6 +25,7 @@ npm run test:browser
 
 ## Read next
 
+- [World and cast narrative checkpoint](docs/WORLD_AND_CAST.md)
 - [Browser checkpoint](docs/CHECKPOINT_2.md)
 - [Pending iPhone VoiceOver acceptance](docs/IPHONE_ACCEPTANCE.md)
 - [Continuation and delivery status](docs/CONTINUATION.md)
