@@ -14,6 +14,12 @@ Published preview: https://deduction-practice.blind-anatomist.chatgpt.site
 Site identity: reuse .openai/hosting.json; never create a replacement Site.
 Initial deployment appgdep_6abc6446dd348191814464cdee7bbd3f succeeded; source 6dda883. Site remains owner-private. GitHub remains authoritative; Sites stores a publishing mirror. Publishing credentials are short-lived: renew for this same Site if necessary, never store them in files.
 
-Current next step: user opens Learn to play on iPhone and follows the practice. Use docs/IPHONE_ACCEPTANCE.md to report actual VoiceOver behavior. Focus, pacing and instructional clarity should be refined from that feedback before larger game content or audio work.
+Narrative checkpoint: docs/WORLD_AND_CAST.md now preserves the accepted Vaudrey House direction, Calder Works history, sealed deposition, six suspects, six stratagems, nine locations, fixed historical guilt versus generated procedural guilt, and the current suspect relationship architecture. Use that file rather than chat history when continuing world or character design.
+
+Two tracks can now proceed in parallel:
+- Real iPhone VoiceOver acceptance of the existing guided checkpoint, using docs/IPHONE_ACCEPTANCE.md.
+- Narrative/content development from docs/WORLD_AND_CAST.md.
+
+Do not let full-game narrative expansion destabilize the small teaching fixture before actual iPhone acceptance. The planned full game is a separate Vaudrey House content pack; the existing 3 x 3 x 3 tutorial remains intentionally small unless testing demonstrates a reason to change it.
 
 If interrupted during final handoff, check the branch head, PR CI and this same Site's latest deployment. Do not repeat completed tests unless their inputs changed. Documentation-only changes do not change the tested app bundle.
