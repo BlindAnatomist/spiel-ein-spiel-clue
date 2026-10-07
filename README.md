@@ -10,9 +10,11 @@ Preview publication is verified. Automated tests pass; real iPhone VoiceOver acc
 
 ## Current narrative direction
 
-On 2026-10-06 the user requested a fresh narrative build rather than repairs to the Vaudrey draft. Start with [Bellwether House: rebuild proposal](docs/BELLWETHER_REBUILD.md). The direction reset is authorized; the new fictional particulars and proposed concealment-object category remain proposals for review, not approved or implemented final content.
+Start with [Active narrative direction: steampunk meets Wilkie Collins](docs/NARRATIVE_DIRECTION.md). The user confirmed a clean-sheet fictional rebuild that recovers the first proposal's theatricality, menace, eccentricity and active household machinery without restoring its untested biographies and causal claims.
 
-The earlier world document and its audit are preserved as historical records, not active character canon. Do not continue filling gaps in Vaudrey House or automatically import its biographies into the rebuild. Existing game code and the small teaching fixture are unchanged.
+The planned full game remains 21 cards: six suspects, six methods and nine locations. Bellwether's proposed concealment-object substitution was not approved. World-building must enrich the existing deduction game rather than replace it with an archive debate, a new victory condition or separately scripted mysteries.
+
+Vaudrey and Bellwether are preserved exploratory drafts, not mandatory starting casts. The new direction is confirmed; no third cast, final title or replacement plot has been approved. Existing game code and the small teaching fixture are unchanged.
 
 ## Run
 
@@ -31,12 +33,13 @@ npm run test:browser
 
 ## Read next
 
-- [Active narrative rebuild: Bellwether House proposal](docs/BELLWETHER_REBUILD.md)
+- [Active narrative direction and unchanged 21-card scope](docs/NARRATIVE_DIRECTION.md)
 - [Continuation and delivery status](docs/CONTINUATION.md)
 - [Browser checkpoint](docs/CHECKPOINT_2.md)
 - [Pending iPhone VoiceOver acceptance](docs/IPHONE_ACCEPTANCE.md)
 - [Foundation and contracts](docs/FOUNDATION.md)
 - [Checkpoint record and next work](docs/CHECKPOINT_1.md)
+- [Preserved Bellwether proposal, not approved final fiction](docs/BELLWETHER_REBUILD.md)
 - [Historical Vaudrey narrative audit and general failure modes](docs/NARRATIVE_LOGIC_AUDIT.md)
 - [Historical Vaudrey world-and-cast draft, no longer the active direction](docs/WORLD_AND_CAST.md)
 - `src/types.ts`: structured actions, events, views, notebook, policy contract
