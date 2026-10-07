@@ -1,6 +1,20 @@
-# Original deduction game: headless checkpoint 1
+# Original deduction game: guided browser checkpoint
 
-This repository is the authoritative project record. The first checkpoint implements an original-world-ready, presentation-independent deduction engine. All current content IDs are abstract placeholders. There is no playable browser interface yet.
+This repository is the authoritative project record. The existing headless engine now supports a guided first game, ordinary human play, and manually stepped bot observation. Provisional labels stay outside the engine. All narration is accessible text; there is no separate speech engine.
+
+Choose Learn to play for the interactive practice. It teaches the rules while you use the same movement, suggestion, response, notebook and accusation controls as ordinary play.
+
+[Open the isolated preview](https://deduction-practice.blind-anatomist.chatgpt.site)
+
+Preview publication is verified. Automated tests pass; real iPhone VoiceOver acceptance is pending. The preview is private to its owner and may require signing into the same ChatGPT account.
+
+## Current narrative direction
+
+Start with [Active narrative direction: steampunk meets Wilkie Collins](docs/NARRATIVE_DIRECTION.md). The user confirmed a clean-sheet fictional rebuild that recovers the first proposal's theatricality, menace, eccentricity and active household machinery without restoring its untested biographies and causal claims.
+
+The planned full game remains 21 cards: six suspects, six methods and nine locations. Bellwether's proposed concealment-object substitution was not approved. World-building must enrich the existing deduction game rather than replace it with an archive debate, a new victory condition or separately scripted mysteries.
+
+Vaudrey and Bellwether are preserved exploratory drafts, not mandatory starting casts. The new direction is confirmed; no third cast, final title or replacement plot has been approved. Existing game code and the small teaching fixture are unchanged.
 
 ## Run
 
@@ -10,14 +24,24 @@ Requires Node.js 24 or later and npm. No runtime dependencies, API keys, or serv
 npm ci
 npm run check
 npm run simulate -- checkpoint-1
+npm run build
+npx playwright install --with-deps chromium webkit
+npm run test:browser
 ```
 
 `check` runs strict TypeScript checking and the deterministic contract tests. `simulate` accepts an optional seed, runs baseline bots, and prints a public outcome summary. With `checkpoint-1`, the expected result is investigator-b winning after 62 actions and 16 turns. A simulation action limit is reported explicitly, never represented as a completed game.
 
 ## Read next
 
+- [Active narrative direction and unchanged 21-card scope](docs/NARRATIVE_DIRECTION.md)
+- [Continuation and delivery status](docs/CONTINUATION.md)
+- [Browser checkpoint](docs/CHECKPOINT_2.md)
+- [Pending iPhone VoiceOver acceptance](docs/IPHONE_ACCEPTANCE.md)
 - [Foundation and contracts](docs/FOUNDATION.md)
 - [Checkpoint record and next work](docs/CHECKPOINT_1.md)
+- [Preserved Bellwether proposal, not approved final fiction](docs/BELLWETHER_REBUILD.md)
+- [Historical Vaudrey narrative audit and general failure modes](docs/NARRATIVE_LOGIC_AUDIT.md)
+- [Historical Vaudrey world-and-cast draft, no longer the active direction](docs/WORLD_AND_CAST.md)
 - `src/types.ts`: structured actions, events, views, notebook, policy contract
 - `src/referee.ts`: trusted rules authority and deterministic replay
 - `src/bot.ts`: independent baseline policy
