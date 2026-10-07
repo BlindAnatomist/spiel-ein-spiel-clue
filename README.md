@@ -8,6 +8,12 @@ Choose Learn to play for the interactive practice. It teaches the rules while yo
 
 Preview publication is verified. Automated tests pass; real iPhone VoiceOver acceptance is pending. The preview is private to its owner and may require signing into the same ChatGPT account.
 
+## Current narrative direction
+
+On 2026-10-06 the user requested a fresh narrative build rather than repairs to the Vaudrey draft. Start with [Bellwether House: rebuild proposal](docs/BELLWETHER_REBUILD.md). The direction reset is authorized; the new fictional particulars and proposed concealment-object category remain proposals for review, not approved or implemented final content.
+
+The earlier world document and its audit are preserved as historical records, not active character canon. Do not continue filling gaps in Vaudrey House or automatically import its biographies into the rebuild. Existing game code and the small teaching fixture are unchanged.
+
 ## Run
 
 Requires Node.js 24 or later and npm. No runtime dependencies, API keys, or services.
@@ -25,19 +31,18 @@ npm run test:browser
 
 ## Read next
 
-- [Narrative and game-logic audit: read before full-world implementation](docs/NARRATIVE_LOGIC_AUDIT.md)
-- [World and cast narrative checkpoint](docs/WORLD_AND_CAST.md)
+- [Active narrative rebuild: Bellwether House proposal](docs/BELLWETHER_REBUILD.md)
+- [Continuation and delivery status](docs/CONTINUATION.md)
 - [Browser checkpoint](docs/CHECKPOINT_2.md)
 - [Pending iPhone VoiceOver acceptance](docs/IPHONE_ACCEPTANCE.md)
-- [Continuation and delivery status](docs/CONTINUATION.md)
 - [Foundation and contracts](docs/FOUNDATION.md)
 - [Checkpoint record and next work](docs/CHECKPOINT_1.md)
+- [Historical Vaudrey narrative audit and general failure modes](docs/NARRATIVE_LOGIC_AUDIT.md)
+- [Historical Vaudrey world-and-cast draft, no longer the active direction](docs/WORLD_AND_CAST.md)
 - `src/types.ts`: structured actions, events, views, notebook, policy contract
 - `src/referee.ts`: trusted rules authority and deterministic replay
 - `src/bot.ts`: independent baseline policy
 - `test/contracts.test.ts`: executable contracts
-
-Narrative review, 2026-10-06: the world premise is retained, but its detailed continuity, document custody, method definitions, knowledge relationships and full-game integration require repair. The audit records findings and proposed repairs; it does not silently replace the original narrative with newly approved canon. Resolve the case contract, timeline and knowledge ledger before bulk dialogue or asset production.
 
 ## Minimal host integration
 
