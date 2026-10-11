@@ -1,6 +1,7 @@
 import { GameHost, type Mode, type Perspective, type Screen, type StoragePort, type Command } from './host.ts';
 import { content, human, name, triple } from './content.ts';
 import { narrate, situation } from './narration.ts';
+import { evidenceCopy } from './evidence-copy.ts';
 import { categories, type Action, type Category, type Hypothesis } from '../src/types.ts';
 const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id)! as T;
 function el<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string):HTMLElementTagNameMap[K]{const n=document.createElement(tag);if(text)n.textContent=text;return n;}
@@ -135,6 +136,7 @@ function acknowledgeReview(card?:string){
  }
 }
 function openReview(kind:'situation'|'evidence'|'notebook'|'transcript'|'rules'){
+ const evidenceText=evidenceCopy(screen!);
  const s=screen!;const titles={situation:'Current situation',evidence:s.mode==='listen'?`${name(s.perspective)}’s evidence`:'My evidence',notebook:'Evidence notebook',transcript:'Case transcript',rules:'Rules help'};
  const body=openPanel(titles[kind]);
  if(s.lesson)paragraph(body,`Current objective: ${s.lesson.title}. ${s.lesson.text}`);
@@ -146,7 +148,7 @@ function openReview(kind:'situation'|'evidence'|'notebook'|'transcript'|'rules')
   paragraph(body,'Personally held cards are not in the hidden answer. Investigator names identify who holds evidence; suspect cards identify people being investigated.');
   const list=el('ul');for(const card of s.hand)list.append(el('li',`${name(card)}. Personally held; excluded from the hidden answer.`));body.append(list);
   const shown=s.notebook?.entries.filter(e=>e.status==='directlyRevealed')??[];body.append(el('h3','Evidence shown privately'));
-  if(!shown.length)paragraph(body,'No cards have been shown to you yet.');
+  if(!shown.length)paragraph(body,evidenceText.noneShown);
   for(const e of shown)paragraph(body,`${name(e.card)}. Shown by ${[...new Set(e.reveals.map(r=>name(r.by)))].join(', ')}.`);
   acknowledgeReview();
  }else if(kind==='notebook'){
@@ -157,7 +159,7 @@ function openReview(kind:'situation'|'evidence'|'notebook'|'transcript'|'rules')
   const draw=()=>{entries.replaceChildren();for(const e of s.notebook?.entries.filter(e=>e.category===select.value)??[]){
    entries.append(button(`${name(e.card)} — ${e.status==='personallyHeld'?'personally held':e.status==='directlyRevealed'?'shown privately':'unresolved'}`,()=>{
     const old=entries.querySelector('[data-detail]');old?.remove();const detail=el('section');detail.dataset.detail='true';detail.tabIndex=-1;
-    paragraph(detail,`${name(e.card)}. ${e.status==='personallyHeld'?'You hold this card. It cannot be hidden.':e.status==='directlyRevealed'?'Direct evidence: this card cannot be hidden.':'Unresolved: not directly eliminated by a held or shown card.'}`);
+    paragraph(detail,`${name(e.card)}. ${e.status==='personallyHeld'?evidenceText.heldDetail:e.status==='directlyRevealed'?'Direct evidence: this card cannot be hidden.':'Unresolved: not directly eliminated by a held or shown card.'}`);
     for(const r of e.reveals)paragraph(detail,`Shown by ${name(r.by)}. Transcript reference ${r.eventId}.`);
     if(!e.reveals.length&&e.status==='unresolved')paragraph(detail,'No direct reveal is recorded. Review public exchanges for constraints you can reason from.');
     entries.append(detail);acknowledgeReview(e.card);detail.focus();

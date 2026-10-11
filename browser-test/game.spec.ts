@@ -5,8 +5,31 @@ import {content,human,name} from '../app/content.ts';
 import {Referee} from '../src/referee.ts';
 import {baselineBot} from '../src/bot.ts';
 import {narrate} from '../app/narration.ts';
+import {GameHost,type Mode,type Perspective} from '../app/host.ts';
 import type {Action} from '../src/types.ts';
 const saved=async(page:Page,mode='learn')=>page.evaluate(m=>localStorage.getItem(`deduction-browser-2-${m}`),mode);
+
+for(const [mode,perspective] of [
+ ['listen','investigator-a'],['listen','investigator-b'],['listen','investigator-c'],
+ ['learn','investigator-a'],['play','investigator-a'],
+] as [Mode,Perspective][])test(`evidence ownership wording for ${mode} ${perspective}`,async({page})=>{
+ const seed='evidence-ownership-browser';await clean(page,seed);
+ if(mode==='listen')await page.getByLabel('Observation perspective').selectOption(perspective);
+ await page.getByRole('button',{name:mode==='listen'?'Listen to bots play':mode==='learn'?'Learn to play':'Play a game',exact:true}).click();
+ const initial=new GameHost(mode,seed,perspective).screen();
+ const before=await saved(page,mode);
+ await page.locator('#evidence').click();
+ await expect(page.getByRole('dialog')).toContainText(mode==='listen'?`No cards have been shown to ${name(perspective)} yet.`:'No cards have been shown to you yet.');
+ await page.getByRole('button',{name:'Return to game',exact:true}).click();
+ await page.locator('#notebook').click();
+ const card=initial.hand[0]!;
+ await page.getByLabel('Evidence category').selectOption(card.split('-')[0]!);
+ await page.getByRole('button',{name:`${name(card)} — personally held`,exact:true}).click();
+ await expect(page.locator('[data-detail]')).toHaveText(`${name(card)}. ${mode==='listen'?`${name(perspective)} holds`:'You hold'} this card. It cannot be hidden.`);
+ expect(await saved(page,mode)).toBe(before);
+ await page.getByRole('button',{name:'Return to game',exact:true}).click();
+ await expect(page.locator('#notebook')).toBeFocused();
+});
 async function clean(page:Page,seed='browser-normal'){
  await page.addInitScript(seed=>{Object.defineProperty(crypto,'randomUUID',{value:()=>seed});},seed);
  await page.goto('/');
