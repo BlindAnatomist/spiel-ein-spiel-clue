@@ -29,9 +29,11 @@ Local saves contain privileged archives, but only the host reads/writes them. Th
 
 Everything advances through an explicit user action. There are no game timers, autoplay, speech-duration guesses, live-region completion triggers, or background bot loops.
 
-Stable document sections hold the objective, latest exchange, next action and review navigation. Only the action area and exchange text are updated on an accepted transition. Practice focuses the new objective heading; ordinary evidence updates focus the latest exchange; mandatory human responses focus the action heading; completion focuses the outcome heading. Explanations and repeat focus existing text without creating a rules event. No live region duplicates forced-focus announcements.
+Local announcement/navigation patch, not yet published or verified on iPhone: each accepted step composes every newly permitted event in order, the new lesson when it changes, current orientation and the next prompt. A persistent polite atomic status region receives the complete text in one update after useful focus is placed. Lesson-only Continue does not replay the previous exchange. Opening/resuming announces the present position without replaying the saved journal. Recorded narration can later consume the same presentation-only cues; no recordings or alternate speech engine are included.
 
-Native modal dialogs receive focus at their heading and support Escape. Closing review returns to its invoking control. Composer selectors retain values through review/change-choices; cancel returns to the invoking action. Submitting closes the dialog and focuses the next game state. Current tutorial objective remains available in every review panel. Notebook uses one category selector, named item buttons and concise provenance, rather than a spoken matrix.
+Useful controls precede optional review text. A repeated Continue/Next exchange that remains the sole action-area child retains its DOM identity and updated revision callback. Repeat this step focuses a single contiguous readback immediately before the controls without also issuing a live announcement. Explain opens the current instruction in a review dialog. Review or leaving the game cancels any not-yet-posted announcement. The rendering-frame update is not a speech-duration estimate: the browser cannot know when VoiceOver has finished, and narration never advances gameplay. User navigation may interrupt or supersede speech; repeat and the transcript remain available.
+
+Native modal dialogs are populated before their heading receives focus and support Escape. Closing review returns to the explicitly activated invoking control, without inferring it from browser focus. Composer selectors retain values through review/change-choices; cancel returns to the invoking action. Submitting closes the dialog and focuses the next useful control or choice area. Notebook details appear immediately after their item, and the selected category is retained within the current session. Category and history-range headings identify the updated content. The full lesson is available through Explain rather than repeated in every review panel.
 
 ## Recovery
 
@@ -64,7 +66,7 @@ The isolated owner-private Site reported deployment `succeeded` at 2026-09-30 01
 
 Choose Learn to play, then Continue. If a saved practice exists, choose Resume saved case or explicitly replace it. Signing into the owner’s ChatGPT account may be required.
 
-Automation does not establish real iPhone VoiceOver usability. No user approval or real-device testing is claimed. See IPHONE_ACCEPTANCE.md.
+Automation does not establish real iPhone VoiceOver usability. The owner reported that the earlier private preview taught the rules, but turn events required repeated swipes. The local announcement/navigation changes have not been tested or approved on that device. See IPHONE_ACCEPTANCE.md.
 
 ## Limitations and next checkpoint
 

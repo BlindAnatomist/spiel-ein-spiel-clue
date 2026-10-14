@@ -2,76 +2,106 @@ import { GameHost, type Mode, type Perspective, type Screen, type StoragePort, t
 import { content, human, name, triple } from './content.ts';
 import { narrate, situation } from './narration.ts';
 import { evidenceCopy } from './evidence-copy.ts';
+import { orientation, stepNarration, type StepNarration } from './step-narration.ts';
 import { categories, type Action, type Category, type Hypothesis } from '../src/types.ts';
 const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id)! as T;
 function el<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string):HTMLElementTagNameMap[K]{const n=document.createElement(tag);if(text)n.textContent=text;return n;}
-function button(text:string,run:()=>void,primary=false){const b=el('button',text);b.type='button';if(primary)b.className='primary';b.addEventListener('click',run);return b;}
+const buttonRuns=new WeakMap<HTMLButtonElement,(origin:HTMLButtonElement)=>void>();
+function button(text:string,run:(origin:HTMLButtonElement)=>void,primary=false){const b=el('button',text);b.type='button';if(primary)b.className='primary';buttonRuns.set(b,run);b.addEventListener('click',()=>buttonRuns.get(b)!(b));return b;}
 function paragraph(parent:HTMLElement,text:string){parent.append(el('p',text));}
 let storage:StoragePort|null=null;try{storage=window.localStorage;}catch{/* A readable warning is supplied by the host. */}
 let host:GameHost|null=null, screen:Screen|null=null, reviewVisited=false;
+let notebookCategory:Category='suspect', lastNarration:StepNarration={cues:[],text:''};
+let announcementFrame:number|null=null;
 const dialog=$<HTMLDialogElement>('panel');let returnTarget:HTMLElement|null=null;
 function focus(id:string){$(id).focus();}
-function openPanel(title:string,origin:HTMLElement=document.activeElement as HTMLElement){returnTarget=origin;$('panel-title').textContent=title;$('panel-body').replaceChildren();$('panel-close').textContent='Return to game';if(!dialog.open)dialog.showModal();focus('panel-title');return $('panel-body');}
-function closePanel(){dialog.close();if(returnTarget?.isConnected&&!returnTarget.hidden)returnTarget.focus();else focus('action-title');}
+function cancelAnnouncement(){if(announcementFrame!==null)cancelAnimationFrame(announcementFrame);announcementFrame=null;$('announcement').textContent='';}
+function announce(text:string){
+ cancelAnnouncement();
+ // A rendering frame establishes the existing live region's text change. It is
+ // not a speech-duration estimate or a VoiceOver completion callback.
+ announcementFrame=requestAnimationFrame(()=>{announcementFrame=null;if(!dialog.open&&!$('game').hidden)$('announcement').textContent=text;});
+}
+function openPanel(title:string,origin:HTMLElement){cancelAnnouncement();returnTarget=origin;$('panel-title').textContent=title;$('panel-body').replaceChildren();$('panel-close').textContent='Return to game';return $('panel-body');}
+function showPanel(){if(!dialog.open)dialog.showModal();focus('panel-title');}
+function closePanel(){dialog.close();if(returnTarget?.isConnected&&!returnTarget.closest('[hidden]'))returnTarget.focus();else focus('action-title');}
 $('panel-close').addEventListener('click',closePanel);
 dialog.addEventListener('cancel',e=>{e.preventDefault();closePanel();});
 function error(message:string){$('error').textContent=message;focus('error');}
 function commit(command:Command,revision=screen!.revision){
- try{screen=host!.dispatch(command,revision);reviewVisited=false;render(true);}catch(e){error(e instanceof Error?e.message:'The action could not be completed.');}
+ try{const before=screen!;screen=host!.dispatch(command,revision);reviewVisited=false;render(before);}catch(e){cancelAnnouncement();error(e instanceof Error?e.message:'The action could not be completed.');}
 }
 function start(mode:Mode,perspective:Perspective='public',resume=false){
  try{
   host=resume?GameHost.restore(mode,storage!):new GameHost(mode,crypto.randomUUID(),perspective,storage);
-  if(!resume)host.persist();screen=host.screen();reviewVisited=false;$('home').hidden=true;$('game').hidden=false;render(true);
+  if(!resume)host.persist();screen=host.screen();reviewVisited=false;notebookCategory='suspect';$('home').hidden=true;$('game').hidden=false;render(null);
  }catch(e){$('home-message').textContent=e instanceof Error?e.message:'Unable to open the case.';focus('home-message');}
 }
-function requestStart(mode:Mode,perspective:Perspective='public'){
+function requestStart(mode:Mode,perspective:Perspective,origin:HTMLElement){
  const state=GameHost.inspect(mode,storage);
  if(state!=='saved'){start(mode,perspective);return;}
- const body=openPanel('A saved case is available');paragraph(body,'Resume where you stopped, or explicitly replace the saved case. Starting a new case discards the previous progress in this mode only.');
+ const body=openPanel('A saved case is available',origin);paragraph(body,'Resume where you stopped, or explicitly replace the saved case. Starting a new case discards the previous progress in this mode only.');
  body.append(button('Resume saved case',()=>{closePanel();start(mode,perspective,true);},true),button('Start new case',()=>{
-  const b=openPanel('Replace saved case?',returnTarget!);paragraph(b,'This will replace your saved progress in this mode. Other modes keep their own saves.');b.append(button('Replace and start',()=>{closePanel();start(mode,perspective);},true));$('panel-close').textContent='Cancel';
- }));$('panel-close').textContent='Cancel';
+  const b=openPanel('Replace saved case?',origin);paragraph(b,'This will replace your saved progress in this mode. Other modes keep their own saves.');b.append(button('Replace and start',()=>{closePanel();start(mode,perspective);},true));$('panel-close').textContent='Cancel';showPanel();
+ }));$('panel-close').textContent='Cancel';showPanel();
 }
 function home(){
+ cancelAnnouncement();lastNarration={cues:[],text:''};
+ $('step-readback').hidden=true;$('step-readback').textContent='';
  $('game').hidden=true;$('home').hidden=false;$('home-message').textContent='';
  const controls=$('entry-controls');controls.replaceChildren();
- controls.append(button('Learn to play',()=>requestStart('learn'),true),button('Play a game',()=>requestStart('play')));
+ controls.append(button('Learn to play',origin=>requestStart('learn','public',origin),true),button('Play a game',origin=>requestStart('play','public',origin)));
  const label=el('label','Observation perspective');label.htmlFor='perspective';const select=el('select');select.id='perspective';
  for(const [value,text] of [['public','Public observation'],...content.players.map(p=>[p,`Follow ${name(p)}`])]){const o=el('option',text);o.value=value!;select.append(o);}
- controls.append(label,select,button('Listen to bots play',()=>requestStart('listen',select.value as Perspective)));
+ controls.append(label,select,button('Listen to bots play',origin=>requestStart('listen',select.value as Perspective,origin)));
  const states=(['learn','play','listen'] as Mode[]).map(m=>GameHost.inspect(m,storage));
  if(states.includes('unavailable'))paragraph(controls,'Local resume is unavailable in this browser. You can play without it, but keep this page open.');
  focus('home-title');
 }
 $('menu').addEventListener('click',home);
-$('explain').addEventListener('click',()=>{$('objective-text').tabIndex=-1;focus('objective-text');});
-$('repeat').addEventListener('click',()=>{$('recent').tabIndex=-1;focus('recent');});
-function render(moveFocus:boolean){
+$('explain').addEventListener('click',event=>{const body=openPanel('This step',event.currentTarget as HTMLElement);paragraph(body,$('objective-text').textContent!);showPanel();});
+$('repeat').addEventListener('click',event=>{
+ cancelAnnouncement();const readback=$('step-readback');readback.hidden=false;readback.textContent=lastNarration.text;
+ // AT activation need not focus its button. Make repeated requests a real focus
+ // transition without replacing the active text or issuing a second live update.
+ if(document.activeElement===readback)(event.currentTarget as HTMLElement).focus();
+ readback.focus();
+});
+function replaceActions(next:HTMLElement){
+ const current=$('actions'),old=current.firstElementChild,fresh=next.firstElementChild;
+ // Preserve repeated step controls, including their updated revision callback.
+ if(current.childNodes.length===1&&next.childNodes.length===1&&old instanceof HTMLButtonElement&&fresh instanceof HTMLButtonElement&&old.textContent===fresh.textContent&&['Continue','Next exchange'].includes(old.textContent!)){
+  buttonRuns.set(old,buttonRuns.get(fresh)!);return;
+ }
+ current.replaceChildren(...next.childNodes);
+}
+function render(before:Screen|null){
  const s=screen!;const phase=s.phase, isHumanTurn=phase.kind==='turn'&&phase.player===human;
  $('error').textContent='';
  $('mode-label').textContent=s.mode==='learn'?'Guided practice · You are Rowan':s.mode==='play'?'Fresh mystery · You are Rowan':s.perspective==='public'?'Listening · Public observation':`Listening · Follow ${name(s.perspective)}`;
  $('objective-title').textContent=s.lesson?.title??(phase.kind==='finished'?'Case complete':s.mode==='listen'?'Follow the investigation':'Current objective');
  $('objective-text').textContent=s.lesson?.text??(s.mode==='listen'?`Advance one action at a time. ${situation(phase,s.investigators)}`:`${situation(phase,s.investigators)} ${isHumanTurn?'Your goal is to identify one hidden suspect, method, and location. Use questions to gather evidence before accusing.':''}`);
  $('storage-warning').textContent=s.storageWarning;
- const recent=$('recent');recent.replaceChildren();for(const event of s.recent)paragraph(recent,narrate(event));
+ $('orientation').textContent=orientation(s);
+ $('recent').textContent=s.recent.map(narrate).join(' ');
+ $('step-readback').hidden=true;$('step-readback').textContent='';
  $('evidence').hidden=s.perspective==='public';$('evidence').textContent=s.mode==='listen'?`${name(s.perspective)}’s evidence`:'My evidence';
  $('notebook').hidden=s.perspective==='public';
  $('action-title').textContent=phase.kind==='refutation'&&phase.responder===human&&s.mode!=='listen'?`Your response to ${name(phase.player)}`:'Your next action';
- const actions=$('actions');actions.replaceChildren();
+ const actions=el('div');
  const rev=s.revision;
  if(s.lesson){
   const l=s.lesson;
   if(l.kind==='continue')actions.append(button('Continue',()=>commit({kind:'continue'},rev),true));
   else if(l.kind==='hand'||l.kind==='notebook'){
-   actions.append(button(l.kind==='hand'?'Review my starting evidence':'Find Workshop in notebook',()=>openReview(l.kind==='hand'?'evidence':'notebook')));
+   actions.append(button(l.kind==='hand'?'Review my starting evidence':'Find Workshop in notebook',origin=>openReview(l.kind==='hand'?'evidence':'notebook',origin)));
    const next=button('Continue lesson',()=>commit({kind:'continue'},rev),true);next.disabled=!reviewVisited;next.id='lesson-continue';actions.append(next);
    paragraph(actions,'Read the requested evidence first, then return here to continue.');
   }else if(l.kind==='bot')actions.append(button('Next exchange',()=>commit({kind:'advance'},rev),true));
   else if(l.kind==='finished')actions.append(button('Choose a fresh game',home,true));
   else if(l.kind==='choice')responses(actions,s,rev);
   else if(s.expected){const a=s.expected;
-   if(a.type==='suggest'||a.type==='accuse')actions.append(button(a.type==='suggest'?'Make a suggestion':'Make a final accusation',()=>composer(a.type),true));
+   if(a.type==='suggest'||a.type==='accuse')actions.append(button(a.type==='suggest'?'Make a suggestion':'Make a final accusation',origin=>composer(a.type,origin),true));
    else actions.append(button(a.type==='move'?`Move to ${name(a.destination)}`:a.type==='endTurn'?'End turn':a.type==='pass'?'Cannot refute':'Show evidence',()=>commit({kind:'act',action:a},rev),true));
   }
  }else if(phase.kind==='finished')actions.append(button('Return to menu',home,true));
@@ -81,24 +111,24 @@ function render(moveFocus:boolean){
  }else if(phase.kind==='refutation')responses(actions,s,rev);
  else{
   for(const a of s.legalActions)if(a.type==='move')actions.append(button(`Move to ${name(a.destination)}`,()=>commit({kind:'act',action:a},rev)));
-  if(s.legalActions.some(a=>a.type==='suggest'))actions.append(button('Make a suggestion',()=>composer('suggest'),true));
+  if(s.legalActions.some(a=>a.type==='suggest'))actions.append(button('Make a suggestion',origin=>composer('suggest',origin),true));
   actions.append(button('End turn',()=>commit({kind:'act',action:{type:'endTurn'}},rev)));
-  if(s.legalActions.some(a=>a.type==='accuse'))actions.append(button('Make a final accusation',()=>composer('accuse')));
+  if(s.legalActions.some(a=>a.type==='accuse'))actions.append(button('Make a final accusation',origin=>composer('accuse',origin)));
  }
- if(moveFocus){
-  if(s.lesson)focus('objective-title');
-  else if(phase.kind==='finished')focus('objective-title');
-  else if(phase.kind==='refutation'&&phase.responder===human&&s.mode==='play')focus('action-title');
-  else {recent.tabIndex=-1;recent.focus();}
- }
+ replaceActions(actions);
+ lastNarration=stepNarration(before,s);
+ const available=$('actions').querySelectorAll<HTMLButtonElement>('button:not(:disabled)');
+ const target=s.lesson||available.length===1||phase.kind==='refutation'?available[0]:$('action-title');
+ if(target&&document.activeElement!==target)target.focus();
+ announce(lastNarration.text);
 }
 function responses(parent:HTMLElement,s:Screen,rev:number){
  if(s.phase.kind!=='refutation')return;
  paragraph(parent,`${name(s.phase.player)} asks: ${triple(s.phase.hypothesis)}. Show one matching card privately to ${name(s.phase.player)}, or choose Cannot refute if none match.`);
  for(const a of s.legalActions){if(a.type==='reveal')parent.append(button(`Show ${name(a.card)}`,()=>commit({kind:'act',action:a},rev),true));if(a.type==='pass')parent.append(button('Cannot refute',()=>commit({kind:'act',action:a},rev),true));}
 }
-function composer(type:'suggest'|'accuse'){
- const s=screen!,rev=s.revision,origin=document.activeElement as HTMLElement;
+function composer(type:'suggest'|'accuse',origin:HTMLElement){
+ const s=screen!,rev=s.revision;
  const selected:Partial<Hypothesis>={};
  if(type==='suggest')selected.location=s.investigators.find(p=>p.id===human)!.location;
  const draw=()=>{
@@ -124,8 +154,10 @@ function composer(type:'suggest'|'accuse'){
    paragraph(review,type==='suggest'?'Ask this question now? Investigators will respond in order.':'Confirming attempts to win. If any part is wrong, you lose active turns but must still answer refutations.');
    review.append(button(type==='suggest'?'Submit suggestion':'Confirm accusation',()=>{dialog.close();commit({kind:'act',action},rev);},true),button('Change choices',draw));
    $('panel-close').textContent=type==='suggest'?'Cancel suggestion':'Cancel accusation';
+   showPanel();
   },true));
   $('panel-close').textContent=type==='suggest'?'Cancel suggestion':'Cancel accusation';
+  showPanel();
  };
  draw();
 }
@@ -135,11 +167,10 @@ function acknowledgeReview(card?:string){
   reviewVisited=true;const b=document.getElementById('lesson-continue') as HTMLButtonElement|null;if(b)b.disabled=false;
  }
 }
-function openReview(kind:'situation'|'evidence'|'notebook'|'transcript'|'rules'){
+function openReview(kind:'situation'|'evidence'|'notebook'|'transcript'|'rules',origin:HTMLElement){
  const evidenceText=evidenceCopy(screen!);
  const s=screen!;const titles={situation:'Current situation',evidence:s.mode==='listen'?`${name(s.perspective)}’s evidence`:'My evidence',notebook:'Evidence notebook',transcript:'Case transcript',rules:'Rules help'};
- const body=openPanel(titles[kind]);
- if(s.lesson)paragraph(body,`Current objective: ${s.lesson.title}. ${s.lesson.text}`);
+ const body=openPanel(titles[kind],origin);
  if(kind==='situation'){
   paragraph(body,situation(s.phase,s.investigators));
   for(const p of s.investigators)paragraph(body,`${name(p.id)}: ${name(p.location)}; ${p.handCount} evidence cards.${p.eliminated?' No active turns; still answers refutations.':''}`);
@@ -155,21 +186,24 @@ function openReview(kind:'situation'|'evidence'|'notebook'|'transcript'|'rules')
   paragraph(body,'Unresolved means this notebook has not directly eliminated the item. It does not guarantee that the item is still logically possible. Recorded evidence is kept separate from deductions you make yourself.');
   const label=el('label','Evidence category');label.htmlFor='category';const select=el('select');select.id='category';
   for(const [value,text] of [['suspect','Suspects'],['method','Methods'],['location','Locations']]){const o=el('option',text);o.value=value!;select.append(o);}body.append(label,select);
+  select.value=notebookCategory;
+  const categoryTitle=el('h3');body.append(categoryTitle);
   const entries=el('div');body.append(entries);
-  const draw=()=>{entries.replaceChildren();for(const e of s.notebook?.entries.filter(e=>e.category===select.value)??[]){
-   entries.append(button(`${name(e.card)} — ${e.status==='personallyHeld'?'personally held':e.status==='directlyRevealed'?'shown privately':'unresolved'}`,()=>{
+  const draw=()=>{notebookCategory=select.value as Category;const items=s.notebook?.entries.filter(e=>e.category===select.value)??[];categoryTitle.textContent=`${select.selectedOptions[0]!.textContent}, ${items.length} entries`;entries.replaceChildren();for(const e of items){
+   entries.append(button(`${name(e.card)} — ${e.status==='personallyHeld'?'personally held':e.status==='directlyRevealed'?'shown privately':'unresolved'}`,origin=>{
     const old=entries.querySelector('[data-detail]');old?.remove();const detail=el('section');detail.dataset.detail='true';detail.tabIndex=-1;
+    const heading=el('h4',`${name(e.card)} evidence`);heading.id='notebook-detail-title';detail.setAttribute('aria-labelledby',heading.id);detail.append(heading);
     paragraph(detail,`${name(e.card)}. ${e.status==='personallyHeld'?evidenceText.heldDetail:e.status==='directlyRevealed'?'Direct evidence: this card cannot be hidden.':'Unresolved: not directly eliminated by a held or shown card.'}`);
     for(const r of e.reveals)paragraph(detail,`Shown by ${name(r.by)}. Transcript reference ${r.eventId}.`);
     if(!e.reveals.length&&e.status==='unresolved')paragraph(detail,'No direct reveal is recorded. Review public exchanges for constraints you can reason from.');
-    entries.append(detail);acknowledgeReview(e.card);detail.focus();
+    origin.after(detail);acknowledgeReview(e.card);detail.focus();
    }));}
   };select.addEventListener('change',draw);draw();
  }else if(kind==='transcript'){
   paragraph(body,'Only information available in your current perspective appears here. References connect notebook entries to the transcript. Reading history does not advance the case.');
   const label=el('label','History range');label.htmlFor='history-range';const select=el('select');select.id='history-range';
   for(const [v,t] of [['recent','Recent exchanges'],['all','Earlier and recent history']]){const o=el('option',t);o.value=v!;select.append(o);}body.append(label,select);
-  const list=el('ol');body.append(list);const draw=()=>{list.replaceChildren();const events=select.value==='all'?s.events:s.events.slice(-15);for(const e of events)list.append(el('li',`Reference ${e.id}. ${narrate(e)}`));};select.addEventListener('change',draw);draw();
+  const range=el('h3');const list=el('ol');body.append(range,list);const draw=()=>{list.replaceChildren();const events=select.value==='all'?s.events:s.events.slice(-15);range.textContent=`${select.selectedOptions[0]!.textContent}: ${events.length} events${events.length?`, references ${events[0]!.id} to ${events.at(-1)!.id}`:''}.`;for(const e of events)list.append(el('li',`Reference ${e.id}. ${narrate(e)}`));};select.addEventListener('change',draw);draw();
  }else{
   const rules:[string,string][]=[
    ['Objective and evidence','One suspect, one method, and one location form the hidden answer. All other cards are held by investigators. Holding or seeing a card excludes it from the hidden answer. Investigators and suspects are different people.'],
@@ -182,6 +216,7 @@ function openReview(kind:'situation'|'evidence'|'notebook'|'transcript'|'rules')
   ];
   for(const [title,text] of rules){const d=el('details');d.append(el('summary',title),el('p',text));body.append(d);}
  }
+ showPanel();
 }
-for(const kind of ['situation','evidence','notebook','transcript','rules'] as const)$(kind).addEventListener('click',()=>openReview(kind));
+for(const kind of ['situation','evidence','notebook','transcript','rules'] as const)$(kind).addEventListener('click',event=>openReview(kind,event.currentTarget as HTMLElement));
 home();

@@ -25,7 +25,7 @@ for(const [mode,perspective] of [
  const card=initial.hand[0]!;
  await page.getByLabel('Evidence category').selectOption(card.split('-')[0]!);
  await page.getByRole('button',{name:`${name(card)} — personally held`,exact:true}).click();
- await expect(page.locator('[data-detail]')).toHaveText(`${name(card)}. ${mode==='listen'?`${name(perspective)} holds`:'You hold'} this card. It cannot be hidden.`);
+  await expect(page.locator('[data-detail] p').first()).toHaveText(`${name(card)}. ${mode==='listen'?`${name(perspective)} holds`:'You hold'} this card. It cannot be hidden.`);
  expect(await saved(page,mode)).toBe(before);
  await page.getByRole('button',{name:'Return to game',exact:true}).click();
  await expect(page.locator('#notebook')).toBeFocused();
@@ -52,7 +52,7 @@ for(const choice of [0,1])test(`complete guided game, reveal choice ${choice+1},
  await page.getByRole('button',{name:'Learn to play',exact:true}).click();
  for(let i=0;i<lessons.length-1;i++){
   const l=lessons[i]!;await expect(page.locator('#objective-title')).toHaveText(l.title);
-  await expect(page.locator('#objective-title')).toBeFocused();
+  await expect(page.locator('#actions button:not(:disabled)').first()).toBeFocused();
   if(i===8){
    const before=await saved(page);await page.reload();await page.getByRole('button',{name:'Learn to play',exact:true}).click();await page.getByRole('button',{name:'Resume saved case'}).click();
    expect(await saved(page)).toBe(before);await expect(page.locator('#objective-title')).toHaveText(l.title);
@@ -73,7 +73,10 @@ for(const choice of [0,1])test(`complete guided game, reveal choice ${choice+1},
    await page.getByRole('button',{name:'Workshop — shown privately',exact:true}).click();
    await expect(page.getByRole('dialog')).toContainText('Shown by Lena.');
    await page.getByRole('button',{name:'Return to game',exact:true}).click();await page.getByRole('button',{name:'Continue lesson'}).click();
-  }else if(l.kind==='bot')await page.getByRole('button',{name:'Next exchange',exact:true}).click();
+  }else if(l.kind==='bot'){
+   const next=await page.getByRole('button',{name:'Next exchange',exact:true}).elementHandle();await next!.click();
+   if(lessons[i+1]!.kind==='bot')expect(await next!.evaluate(node=>node===document.querySelector('#actions button'))).toBe(true);
+  }
   else if(l.kind==='choice'){
    const options=page.locator('#actions button');await expect(options).toHaveCount(2);await options.nth(choice).click();
   }else if(l.kind==='action')await act(page,l.action!);
@@ -92,8 +95,8 @@ test('help, repeats, review, selectors and canceled accusations preserve state a
  for(const id of ['situation','evidence','notebook','transcript','rules']){
   await page.locator('#'+id).click();await expect(page.locator('#panel-title')).toBeFocused();await page.keyboard.press('Escape');await expect(page.locator('#'+id)).toBeFocused();expect(await saved(page,'play')).toBe(before);
  }
- await page.getByRole('button',{name:'Explain this step'}).click();await expect(page.locator('#objective-text')).toBeFocused();
- await page.getByRole('button',{name:'Repeat last exchange'}).click();await expect(page.locator('#recent')).toBeFocused();
+ await page.getByRole('button',{name:'Explain this step'}).click();await expect(page.locator('#panel-title')).toBeFocused();await page.keyboard.press('Escape');await expect(page.locator('#explain')).toBeFocused();
+ await page.getByRole('button',{name:'Repeat this step'}).click();await expect(page.locator('#step-readback')).toBeFocused();
  await page.getByRole('button',{name:'Make a final accusation',exact:true}).click();
  await page.getByLabel('Suspect',{exact:true}).selectOption('suspect-a');await page.getByLabel('Method',{exact:true}).selectOption('method-a');await page.getByLabel('Location',{exact:true}).selectOption('location-a');
  expect(await saved(page,'play')).toBe(before);
@@ -136,7 +139,7 @@ for(const perspective of ['public','investigator-b'])test(`observation ${perspec
   const lines=await page.locator('#panel-body li').allTextContents();expect(lines).toEqual(visible.map(e=>`Reference ${e.id}. ${narrate(e)}`));
   await page.getByRole('button',{name:'Return to game',exact:true}).click();
   if(perspective==='public'){await expect(page.locator('#notebook')).toBeHidden();await expect(page.locator('#evidence')).toBeHidden();}
-  const before=await saved(page,'listen');await page.getByRole('button',{name:'Repeat last exchange'}).click();expect(await saved(page,'listen')).toBe(before);
+  const before=await saved(page,'listen');await page.getByRole('button',{name:'Repeat this step'}).click();expect(await saved(page,'listen')).toBe(before);
   if(r.view(human).phase.kind==='finished')break;
   await page.getByRole('button',{name:'Next exchange',exact:true}).click();r.stepBot(baselineBot);
  }
@@ -150,7 +153,7 @@ test('storage failures and damaged saves offer explicit recovery',async({page})=
 
 test('semantic controls, accessible names, keyboard dialogs and mobile reflow',async({page})=>{
  await clean(page);expect((await new AxeBuilder({page}).analyze()).violations).toEqual([]);
- await page.getByRole('button',{name:'Learn to play',exact:true}).focus();await page.keyboard.press('Enter');await expect(page.locator('#objective-title')).toBeFocused();
+ await page.getByRole('button',{name:'Learn to play',exact:true}).focus();await page.keyboard.press('Enter');await expect(page.getByRole('button',{name:'Continue',exact:true})).toBeFocused();
  await page.getByRole('button',{name:'Rules help',exact:true}).focus();await page.keyboard.press('Enter');await expect(page.locator('#panel-title')).toBeFocused();
  expect((await new AxeBuilder({page}).analyze()).violations).toEqual([]);
  await page.keyboard.press('Tab');expect(await page.evaluate(()=>document.activeElement?.tagName)).toBe('SUMMARY');await page.keyboard.press('Enter');
@@ -160,4 +163,67 @@ test('semantic controls, accessible names, keyboard dialogs and mobile reflow',a
  await page.getByRole('button',{name:'Continue',exact:true}).click();await page.getByRole('button',{name:'Review my starting evidence'}).click();await page.getByRole('button',{name:'Return to game',exact:true}).click();await page.getByRole('button',{name:'Continue lesson'}).click();await page.getByRole('button',{name:'Move to Workshop'}).click();await page.getByRole('button',{name:'Continue',exact:true}).click();await page.getByRole('button',{name:'Make a suggestion',exact:true}).click();
  expect((await new AxeBuilder({page}).analyze()).violations).toEqual([]);
  await expect(page.getByLabel('Suspect',{exact:true})).toHaveAttribute('id','choose-suspect');await expect(page.getByLabel('Method',{exact:true})).toHaveAttribute('id','choose-method');
+});
+
+test('complete step narration is atomic, ordered and repeatable without advancing play',async({page})=>{
+ await clean(page);const status=page.locator('#announcement');
+ await expect(status).toHaveAttribute('role','status');await expect(status).toHaveAttribute('aria-live','polite');await expect(status).toHaveAttribute('aria-atomic','true');
+ await page.getByRole('button',{name:'Learn to play',exact:true}).click();await expect(status).toContainText('The missing dispatch');
+ await expect(page.getByRole('button',{name:'Continue',exact:true})).toBeFocused();
+ await page.getByRole('button',{name:'Continue',exact:true}).click();await expect(status).toContainText('Review your starting evidence');await expect(status).not.toContainText('Case opened.');
+ await page.getByRole('button',{name:'Review my starting evidence',exact:true}).click();await page.getByRole('button',{name:'Return to game',exact:true}).click();
+ await page.getByRole('button',{name:'Continue lesson',exact:true}).click();await page.getByRole('button',{name:'Move to Workshop',exact:true}).click();
+ await page.getByRole('button',{name:'Continue',exact:true}).click();await act(page,{type:'suggest',hypothesis:{suspect:'suspect-a',method:'method-a',location:'location-b'}});
+ await expect(status).toContainText('Choose Next exchange');
+ await page.evaluate(()=>{
+  const updates:string[]=[];Object.defineProperty(window,'narrationUpdates',{value:updates,configurable:true});
+  const target=document.querySelector('#announcement')!;
+  new MutationObserver(()=>{if(target.textContent)updates.push(target.textContent);}).observe(target,{childList:true,characterData:true,subtree:true});
+ });
+ await page.getByRole('button',{name:'Next exchange',exact:true}).click();await expect(status).toContainText('Private evidence. Lena showed Rowan: Workshop.');
+ const text=(await status.textContent())!;
+ expect(text.indexOf('Lena refuted')).toBeLessThan(text.indexOf('Private evidence.'));
+ expect(text.indexOf('Private evidence.')).toBeLessThan(text.indexOf('The question is complete.'));
+ expect(await page.evaluate(()=>(window as unknown as {narrationUpdates:string[]}).narrationUpdates)).toEqual([text]);
+ await expect(page.getByRole('button',{name:'Find Workshop in notebook',exact:true})).toBeFocused();
+ const before=await saved(page);await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));expect(await saved(page)).toBe(before);
+ await page.getByRole('button',{name:'Repeat this step',exact:true}).click();await expect(page.locator('#step-readback')).toBeFocused();await expect(page.locator('#step-readback')).toHaveText(text);await expect(status).toBeEmpty();expect(await saved(page)).toBe(before);
+ await page.evaluate(()=>{
+  const readback=document.querySelector<HTMLElement>('#step-readback')!;readback.dataset.focusEvents='0';
+  readback.addEventListener('focus',()=>{readback.dataset.focusEvents=String(Number(readback.dataset.focusEvents)+1);});
+  document.querySelector<HTMLButtonElement>('#repeat')!.click();
+ });
+ await expect(page.locator('#step-readback')).toHaveAttribute('data-focus-events','1');await expect(page.locator('#step-readback')).toBeFocused();
+ await page.locator('#repeat').evaluate((node:HTMLButtonElement)=>node.click());await expect(page.locator('#step-readback')).toHaveAttribute('data-focus-events','2');
+ await expect(page.locator('#step-readback')).toHaveText(text);await expect(status).toBeEmpty();expect(await saved(page)).toBe(before);
+ await page.locator('#menu').click();await expect(page.locator('#step-readback')).toBeEmpty();
+ await page.getByRole('button',{name:'Listen to bots play',exact:true}).click();await expect(status).toContainText('Public observation.');
+ await expect(status).not.toContainText('Private evidence.');await expect(page.locator('#step-readback')).toBeEmpty();
+});
+
+test('review uses its actual opener, and notebook details stay beside their item',async({page})=>{
+ await clean(page);await page.getByRole('button',{name:'Learn to play',exact:true}).click();const before=await saved(page);
+ await page.locator('#objective-title').focus();
+ // Native click deliberately leaves DOM focus elsewhere. This isolates opener
+ // tracking; it does not claim to emulate the VoiceOver cursor.
+ await page.locator('#notebook').evaluate((node:HTMLButtonElement)=>node.click());
+ await expect(page.locator('#panel-title')).toBeFocused();await page.getByLabel('Evidence category').selectOption('location');
+ const item=page.getByRole('button',{name:'Archive — unresolved',exact:true});await item.click();
+ expect(await item.evaluate(node=>node.nextElementSibling?.hasAttribute('data-detail'))).toBe(true);
+ await expect(page.locator('[data-detail]')).toBeFocused();await expect(page.locator('[data-detail]')).toHaveAccessibleName('Archive evidence');
+ await page.keyboard.press('Escape');await expect(page.locator('#notebook')).toBeFocused();
+ await page.locator('#notebook').click();await expect(page.getByLabel('Evidence category')).toHaveValue('location');await expect(page.getByRole('heading',{name:'Locations, 3 entries',exact:true})).toBeVisible();
+ await page.keyboard.press('Escape');expect(await saved(page)).toBe(before);
+});
+
+test('opening review or leaving the game cancels a not-yet-published announcement',async({page})=>{
+ await clean(page);
+ await page.evaluate(()=>{
+  [...document.querySelectorAll<HTMLButtonElement>('#entry-controls button')].find(b=>b.textContent==='Learn to play')!.click();
+  document.querySelector<HTMLButtonElement>('#rules')!.click();
+ });
+ await expect(page.getByRole('dialog')).toBeVisible();await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));await expect(page.locator('#announcement')).toBeEmpty();
+ await page.keyboard.press('Escape');await expect(page.locator('#rules')).toBeFocused();
+ await page.evaluate(()=>{document.querySelector<HTMLButtonElement>('#actions button')!.click();document.querySelector<HTMLButtonElement>('#menu')!.click();});
+ await expect(page.locator('#home')).toBeVisible();await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));await expect(page.locator('#announcement')).toBeEmpty();
 });
