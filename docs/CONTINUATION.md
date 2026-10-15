@@ -4,6 +4,16 @@ Authoritative repository: BlindAnatomist/spiel-ein-spiel-clue.
 Active branch: feat/guided-browser-checkpoint.
 Pull request: https://github.com/BlindAnatomist/spiel-ein-spiel-clue/pull/1.
 
+## Local VoiceOver follow-up, 2026-10-15
+
+The owner tested private preview v4 and could follow the case. They requested less repeated identity/location wording and approved grouping another investigator’s actions into one manually started turn, stopping for their response or before the next investigator acts. These local changes follow implementation commit 4f6e799ef3b96754a082964e616fa38c63f560c9; they are not yet published or device-tested.
+
+Automatic narration now keeps all newly permitted events and the current lesson, with brief changed-context cues. Full identity/location remains available on opening, resume, Repeat and the visible orientation. Repeat remains one focusable readback, with no second live announcement. Procedural tutorial wording distinguishes a planned bot action from an action already taken.
+
+The new advanceTurn host command groups consecutive bot actions within the current turn. It stops on completion, turn change, any human decision, or any non-bot tutorial lesson. A turnStarted event can introduce the next investigator, but that investigator takes no action until a new manual command. After a human response, continuing the same bot turn is also manual. Substantive explanations and reviews remain; intervening procedural bot lines are covered by their actual events. Screen text, transcript and Repeat remain available.
+
+The legacy single-action advance command is retained for existing browser-2 save replay. No engine rules, cast, deal, audio engine, timer, private-event projection, merge or deployment is changed. See IPHONE_ACCEPTANCE.md for the follow-up acceptance checks. Local automated results must be recorded separately from real iPhone verification.
+
 ## Current narrative instruction
 
 Read docs/NARRATIVE_DIRECTION.md first.
@@ -26,7 +36,7 @@ The audit remains useful as a record of failure modes: custody gaps, chronology,
 
 Earlier graph calculations concerned particular proposals only. Bellwether's graph had nine rooms, twelve bidirectional links, maximum shortest-path distance three and average distance two. Vaudrey's different graph had its own recorded properties. Neither map is automatically adopted, and neither calculation established gameplay balance. All 324 narrative combinations remain unvalidated.
 
-## Existing browser checkpoint: unchanged
+## Earlier browser checkpoint
 
 Implementation commit: 6dda8834b083260d0c091001d4c8a6dec6019ede.
 Main remains the headless checkpoint; browser work and these narrative documents are on the review branch. No merge or new deployment is implied.

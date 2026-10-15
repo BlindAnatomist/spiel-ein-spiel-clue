@@ -8,7 +8,9 @@ import { lessons, PRACTICE_SEED, type Lesson } from './tutorial.ts';
 export type Mode = 'learn' | 'play' | 'listen';
 export type Perspective = 'public' | 'investigator-a' | 'investigator-b' | 'investigator-c';
 export interface StoragePort { getItem(key:string):string|null; setItem(key:string,value:string):void; removeItem(key:string):void }
-export type Command = {kind:'continue'} | {kind:'advance'} | {kind:'act';action:Action};
+// Keep single-action advance for replaying existing saves. New UI commands group
+// only the current turn and never cross a human decision or teaching checkpoint.
+export type Command = {kind:'continue'} | {kind:'advance'} | {kind:'advanceTurn'} | {kind:'act';action:Action};
 export interface Screen {
  mode:Mode; perspective:Perspective; revision:number; content:Content; phase:PublicPhase; investigators:Investigator[];
  turn:number; hand:string[]; notebook:Notebook|null; events:VisibleEvent[]; recent:VisibleEvent[]; legalActions:Action[];
@@ -42,23 +44,40 @@ export class GameHost {
  }
  dispatch(command:Command, expectedRevision:number, save=true):Screen {
   if(expectedRevision!==this.#journal.length)throw new Error('That action has already been handled. Review the current situation.');
-  if(!command||typeof command!=='object'||!['continue','advance','act'].includes(command.kind))throw new Error('Invalid command');
+  if(!command||typeof command!=='object'||!['continue','advance','advanceTurn','act'].includes(command.kind))throw new Error('Invalid command');
   if(Object.keys(command).sort().join(',')!==(command.kind==='act'?'action,kind':'kind'))throw new Error('Invalid command fields');
   const step=structuredClone(command);
   const before=this.#events().at(-1)?.id??-1;
   const view=this.#referee.view(human), phase=view.phase;
   const actor=phase.kind==='finished'?null:phase.kind==='turn'?phase.player:phase.responder;
-  if(this.#mode==='learn'){
+  if(command.kind==='advance'||command.kind==='advanceTurn'){
+   const turn=view.turn;
+   do{
+    const current=this.#referee.view(human),p=current.phase;
+    const nextActor=p.kind==='finished'?null:p.kind==='turn'?p.player:p.responder;
+    if(!nextActor||(this.#mode!=='listen'&&nextActor===human))throw new Error('The next decision belongs to the human, or the case has ended.');
+    if(this.#mode==='learn'){
+     const lesson=lessons[this.#lesson]!;
+     if(lesson.kind!=='bot')throw new Error('Use the action described in the current practice objective.');
+     this.#referee.submit(nextActor,lesson.action!);this.#lesson++;
+    }else this.#referee.stepBot(baselineBot);
+    if(command.kind==='advance')break;
+    const next=this.#referee.view(human),nextPhase=next.phase;
+    if(nextPhase.kind==='finished'||next.turn!==turn)break;
+    if(this.#mode!=='listen'&&next.legalActions.length)break;
+    // Procedural bot lines are covered by the actual events. Every explanatory
+    // lesson, review, human action and choice remains an explicit stopping point.
+    if(this.#mode==='learn'&&lessons[this.#lesson]!.kind!=='bot')break;
+   }while(true);
+  }else if(this.#mode==='learn'){
    const lesson=lessons[this.#lesson]!;
    if(command.kind==='continue'&&['continue','hand','notebook'].includes(lesson.kind))this.#lesson++;
-   else if(command.kind==='advance'&&lesson.kind==='bot'&&actor!==human&&actor){this.#referee.submit(actor,lesson.action!);this.#lesson++;}
    else if(command.kind==='act'&&actor===human&&(lesson.kind==='choice'||lesson.kind==='action')){
     if(lesson.kind==='action'&&!equal(command.action,lesson.action))throw new Error('For this practice step, use the choices named in the current objective. Your game has not changed.');
     if(lesson.kind==='choice'&&command.action.type!=='reveal')throw new Error('Choose one matching card to reveal.');
     this.#referee.submit(human,command.action);this.#lesson++;
    }else throw new Error('Use the action described in the current practice objective.');
   }else if(command.kind==='act'&&this.#mode==='play'&&actor===human){this.#referee.submit(human,command.action);}
-  else if(command.kind==='advance'&&actor&&(this.#mode==='listen'||actor!==human)){this.#referee.stepBot(baselineBot);}
   else throw new Error('The next decision belongs to the human, or the case has ended.');
   this.#journal.push(step);
   const fresh=this.#events().filter(e=>e.id>before);

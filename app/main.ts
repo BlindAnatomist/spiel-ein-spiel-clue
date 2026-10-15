@@ -2,7 +2,7 @@ import { GameHost, type Mode, type Perspective, type Screen, type StoragePort, t
 import { content, human, name, triple } from './content.ts';
 import { narrate, situation } from './narration.ts';
 import { evidenceCopy } from './evidence-copy.ts';
-import { orientation, stepNarration, type StepNarration } from './step-narration.ts';
+import { advanceLabel, orientation, stepNarration, type StepNarration } from './step-narration.ts';
 import { categories, type Action, type Category, type Hypothesis } from '../src/types.ts';
 const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id)! as T;
 function el<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string):HTMLElementTagNameMap[K]{const n=document.createElement(tag);if(text)n.textContent=text;return n;}
@@ -11,7 +11,7 @@ function button(text:string,run:(origin:HTMLButtonElement)=>void,primary=false){
 function paragraph(parent:HTMLElement,text:string){parent.append(el('p',text));}
 let storage:StoragePort|null=null;try{storage=window.localStorage;}catch{/* A readable warning is supplied by the host. */}
 let host:GameHost|null=null, screen:Screen|null=null, reviewVisited=false;
-let notebookCategory:Category='suspect', lastNarration:StepNarration={cues:[],text:''};
+let notebookCategory:Category='suspect', lastNarration:StepNarration={cues:[],text:'',repeatText:''};
 let announcementFrame:number|null=null;
 const dialog=$<HTMLDialogElement>('panel');let returnTarget:HTMLElement|null=null;
 function focus(id:string){$(id).focus();}
@@ -46,7 +46,7 @@ function requestStart(mode:Mode,perspective:Perspective,origin:HTMLElement){
  }));$('panel-close').textContent='Cancel';showPanel();
 }
 function home(){
- cancelAnnouncement();lastNarration={cues:[],text:''};
+ cancelAnnouncement();lastNarration={cues:[],text:'',repeatText:''};
  $('step-readback').hidden=true;$('step-readback').textContent='';
  $('game').hidden=true;$('home').hidden=false;$('home-message').textContent='';
  const controls=$('entry-controls');controls.replaceChildren();
@@ -61,7 +61,7 @@ function home(){
 $('menu').addEventListener('click',home);
 $('explain').addEventListener('click',event=>{const body=openPanel('This step',event.currentTarget as HTMLElement);paragraph(body,$('objective-text').textContent!);showPanel();});
 $('repeat').addEventListener('click',event=>{
- cancelAnnouncement();const readback=$('step-readback');readback.hidden=false;readback.textContent=lastNarration.text;
+ cancelAnnouncement();const readback=$('step-readback');readback.hidden=false;readback.textContent=lastNarration.repeatText;
  // AT activation need not focus its button. Make repeated requests a real focus
  // transition without replacing the active text or issuing a second live update.
  if(document.activeElement===readback)(event.currentTarget as HTMLElement).focus();
@@ -70,7 +70,7 @@ $('repeat').addEventListener('click',event=>{
 function replaceActions(next:HTMLElement){
  const current=$('actions'),old=current.firstElementChild,fresh=next.firstElementChild;
  // Preserve repeated step controls, including their updated revision callback.
- if(current.childNodes.length===1&&next.childNodes.length===1&&old instanceof HTMLButtonElement&&fresh instanceof HTMLButtonElement&&old.textContent===fresh.textContent&&['Continue','Next exchange'].includes(old.textContent!)){
+ if(current.childNodes.length===1&&next.childNodes.length===1&&old instanceof HTMLButtonElement&&fresh instanceof HTMLButtonElement&&old.textContent===fresh.textContent&&(old.textContent==='Continue'||old.dataset.advance==='true'&&fresh.dataset.advance==='true')){
   buttonRuns.set(old,buttonRuns.get(fresh)!);return;
  }
  current.replaceChildren(...next.childNodes);
@@ -80,7 +80,7 @@ function render(before:Screen|null){
  $('error').textContent='';
  $('mode-label').textContent=s.mode==='learn'?'Guided practice · You are Rowan':s.mode==='play'?'Fresh mystery · You are Rowan':s.perspective==='public'?'Listening · Public observation':`Listening · Follow ${name(s.perspective)}`;
  $('objective-title').textContent=s.lesson?.title??(phase.kind==='finished'?'Case complete':s.mode==='listen'?'Follow the investigation':'Current objective');
- $('objective-text').textContent=s.lesson?.text??(s.mode==='listen'?`Advance one action at a time. ${situation(phase,s.investigators)}`:`${situation(phase,s.investigators)} ${isHumanTurn?'Your goal is to identify one hidden suspect, method, and location. Use questions to gather evidence before accusing.':''}`);
+ $('objective-text').textContent=s.lesson?.text??(s.mode==='listen'?`Hear one investigator’s turn at a time. ${situation(phase,s.investigators)}`:`${situation(phase,s.investigators)} ${isHumanTurn?'Your goal is to identify one hidden suspect, method, and location. Use questions to gather evidence before accusing.':''}`);
  $('storage-warning').textContent=s.storageWarning;
  $('orientation').textContent=orientation(s);
  $('recent').textContent=s.recent.map(narrate).join(' ');
@@ -90,6 +90,7 @@ function render(before:Screen|null){
  $('action-title').textContent=phase.kind==='refutation'&&phase.responder===human&&s.mode!=='listen'?`Your response to ${name(phase.player)}`:'Your next action';
  const actions=el('div');
  const rev=s.revision;
+ const advance=()=>{const b=button(advanceLabel(s),()=>commit({kind:'advanceTurn'},rev),true);b.dataset.advance='true';return b;};
  if(s.lesson){
   const l=s.lesson;
   if(l.kind==='continue')actions.append(button('Continue',()=>commit({kind:'continue'},rev),true));
@@ -97,7 +98,7 @@ function render(before:Screen|null){
    actions.append(button(l.kind==='hand'?'Review my starting evidence':'Find Workshop in notebook',origin=>openReview(l.kind==='hand'?'evidence':'notebook',origin)));
    const next=button('Continue lesson',()=>commit({kind:'continue'},rev),true);next.disabled=!reviewVisited;next.id='lesson-continue';actions.append(next);
    paragraph(actions,'Read the requested evidence first, then return here to continue.');
-  }else if(l.kind==='bot')actions.append(button('Next exchange',()=>commit({kind:'advance'},rev),true));
+  }else if(l.kind==='bot')actions.append(advance());
   else if(l.kind==='finished')actions.append(button('Choose a fresh game',home,true));
   else if(l.kind==='choice')responses(actions,s,rev);
   else if(s.expected){const a=s.expected;
@@ -106,7 +107,7 @@ function render(before:Screen|null){
   }
  }else if(phase.kind==='finished')actions.append(button('Return to menu',home,true));
  else if(s.mode==='listen'||(!s.legalActions.length)){
-  actions.append(button('Next exchange',()=>commit({kind:'advance'},rev),true));
+  actions.append(advance());
   if(s.investigators.find(p=>p.id===human)?.eliminated&&s.mode==='play')paragraph(actions,'You lost active turns after an incorrect accusation. Continue following the case. It will still pause whenever you must answer a suggestion.');
  }else if(phase.kind==='refutation')responses(actions,s,rev);
  else{
@@ -211,7 +212,7 @@ function openReview(kind:'situation'|'evidence'|'notebook'|'transcript'|'rules',
    ['Answering a question','Other investigators are asked in order. A matching card must be shown privately to the asker. With several matches, choose exactly one. With none, Cannot refute is the only legal response. The first reveal stops the process. Investigators not reached have not passed.'],
    ['Reasoning from passes','If you hold two suggested cards, do not hold the third, and every other investigator passes, the third is hidden. More generally, an all-pass question can still contain cards in the asker’s own hand. Do not assume all three are hidden.'],
    ['Final accusation','You may accuse on your turn, before or after a question, but not during pending refutation. The accusation may name any location. Review and confirmation are required. Correct wins; incorrect ends active turns but you still answer refutations. If everybody fails, no one wins.'],
-   ['Notebook and pacing','Unresolved means not directly eliminated, not guaranteed possible after all deductions. Next exchange advances one action only. Help, review, repeat, and cancel never run bots or change the rules state. No timer advances play.'],
+   ['Notebook and pacing','Unresolved means not directly eliminated, not guaranteed possible after all deductions. Start or continue an investigator’s turn when ready. Their actions and the responses are grouped, stopping whenever you must answer or before the next investigator acts. Practice also pauses for explanations and reviews. Help, review, repeat, and cancel never run bots or change the rules state. No timer advances play.'],
    ['Local resume','Practice, ordinary play, and observation each keep one local save on this browser when storage is available. Return to menu and choose the same mode to resume. Saves stay on this device. Starting new explicitly replaces that mode’s save.'],
   ];
   for(const [title,text] of rules){const d=el('details');d.append(el('summary',title),el('p',text));body.append(d);}

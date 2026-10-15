@@ -6,7 +6,7 @@ Choose Learn to play for the interactive practice. It teaches the rules while yo
 
 [Open the isolated preview](https://deduction-practice.blind-anatomist.chatgpt.site)
 
-Preview publication is verified. Automated tests pass; real iPhone VoiceOver acceptance is pending. The preview is private to its owner and may require signing into the same ChatGPT account.
+The owner could follow private preview v4 with iPhone VoiceOver and requested less repetition and grouped bot turns. That follow-up is local and has not yet been published or device-tested. The preview is private to its owner and may require signing into the same ChatGPT account.
 
 ## Current narrative direction
 

@@ -4,9 +4,9 @@ export type Lesson = { title: string; text: string; kind: 'continue' | 'hand' | 
 const h = (suspect: string, method: string, location: string): Hypothesis => ({suspect,method,location});
 const question = (s: string, m: string, l: string): Action => ({type:'suggest',hypothesis:h(s,m,l)});
 const info = (title: string, text: string): Lesson => ({title,text,kind:'continue'});
-const bot = (text: string, action: Action): Lesson => ({title:'Next exchange',text,kind:'bot',action});
+const bot = (text: string, action: Action): Lesson => ({title:'Follow the investigation',text,kind:'bot',action});
 const end: Lesson = {title:'Finish your turn',text:'Your question is complete. End your turn so the next investigator can ask a question.',kind:'action',action:{type:'endTurn'}};
-const quietTurns: Lesson[] = [end,bot('Lena ends this teaching turn without a question.',{type:'endTurn'}),bot('Otis ends this teaching turn. Your next question is ready.',{type:'endTurn'})];
+const quietTurns: Lesson[] = [end,bot('Lena is ready to end this teaching turn without a question.',{type:'endTurn'}),bot('Otis is ready to end this teaching turn. Your next question is ready.',{type:'endTurn'})];
 // Only the current lesson is projected to the renderer. Future answers remain host-side.
 export const lessons: Lesson[] = [
  info('The missing dispatch','A dispatch disappeared. Find the suspect, method, and location. One card from each category is hidden as the answer. Every other card was dealt to investigators. You are Rowan; Lena and Otis are fellow investigators. Suspect cards name different people.'),
@@ -14,20 +14,20 @@ export const lessons: Lesson[] = [
  {title:'Move to the Workshop',text:'You are in the Archive. The Workshop and Garden are directly connected. You may move along one connection before asking a question. Choose Move to Workshop for this teaching route. No dice or grid are involved.',kind:'action',action:{type:'move',destination:'location-b'}},
  info('One connection travelled','You moved from the Archive to the connected Workshop. That used your one move this turn. You can now ask about the Workshop, or end your turn. We will ask a question.'),
  {title:'Build your first suggestion',text:'A suggestion is a question, not a final answer. Open Make a suggestion. Select Mira and Copied key, then review it. The location is the Workshop because you are there. This practice uses specific questions; ordinary play lets you choose freely.',kind:'action',action:question('suspect-a','method-a','location-b')},
- bot('Lena is the first investigator asked. Next exchange lets her answer your question.',{type:'reveal',card:'location-b'}),
+ bot('Lena is the first investigator asked. Hear her response when ready.',{type:'reveal',card:'location-b'}),
  {title:'Find the private evidence again',text:'Lena privately showed you Workshop. That card cannot be hidden as the location. Otis knows Lena answered, but not which card she showed. Open the notebook, choose Locations, and open Workshop. Its recorded source will still be there after this lesson.',kind:'notebook',card:'location-b'},
  info('Why this question was controlled','You hold Mira and Copied key. Nobody else can hold either card. So another investigator answering that question must show Workshop. Refutation stops at the first reveal: Otis was never asked, and must not be counted as having passed.'),
  end,
- bot('Lena asks about Mira, Copied key, and the Garden. She is already in the Garden.',question('suspect-a','method-a','location-c')),
- bot('Otis is asked first. Next exchange lets him respond.',{type:'pass'}),
+ bot('Lena will ask about Mira, Copied key, and the Garden. She is already in the Garden.',question('suspect-a','method-a','location-c')),
+ bot('Otis is asked first.',{type:'pass'}),
  {title:'Choose one card to show Lena',text:'You hold two matches: Mira and Copied key. Choose either one. Only Lena receives the card you select. The other matching card stays private. You cannot pass when you hold a match.',kind:'choice'},
  info('One card, one recipient','Lena received only your selected card. Otis knows you refuted her suggestion, but not which card you chose. Both choices lead to the same next lesson.'),
- bot('Lena ends her turn.',{type:'endTurn'}),
- bot('Otis moves from the Workshop to the Garden, along a direct connection.',{type:'move',destination:'location-c'}),
- bot('Otis asks about Dorian, Forged message, and the Garden.',question('suspect-b','method-b','location-c')),
+ bot('Lena is ready to end her turn.',{type:'endTurn'}),
+ bot('Otis will move from the Workshop to the Garden, along a direct connection.',{type:'move',destination:'location-c'}),
+ bot('Otis will ask about Dorian, Forged message, and the Garden.',question('suspect-b','method-b','location-c')),
  {title:'When you cannot refute',text:'None of your cards match this question. Cannot refute is your only legal response. Passing is a statement about your hand, not an optional bluff. Choose it to let the next investigator answer.',kind:'action',action:{type:'pass'}},
  bot('Lena is now asked. Her selected evidence will be private to Otis; you will hear only that she answered.',{type:'reveal',card:'suspect-b'}),
- bot('Otis ends his turn.',{type:'endTurn'}),
+ bot('Otis is ready to end his turn.',{type:'endTurn'}),
  {title:'Test another location',text:'Move to the Archive. You can use your two held cards to ask a controlled question about this location too.',kind:'action',action:{type:'move',destination:'location-a'}},
  {title:'Ask about the Archive',text:'Choose Mira and Copied key again. You hold both, so any refutation must concern the Archive.',kind:'action',action:question('suspect-a','method-a','location-a')},
  bot('Lena is asked first.',{type:'pass'}),
