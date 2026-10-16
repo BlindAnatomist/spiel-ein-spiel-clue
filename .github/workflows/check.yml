@@ -1,10 +1,11 @@
-name: Headless contracts
+name: Engine and browser contracts
 on: [push, pull_request]
 permissions:
   contents: read
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -14,3 +15,6 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run simulate -- checkpoint-1
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:browser

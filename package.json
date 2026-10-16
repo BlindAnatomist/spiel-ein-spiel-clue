@@ -6,7 +6,10 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test test/*.test.ts",
     "check": "npm run typecheck && npm test",
-    "simulate": "node src/cli.ts"
+    "simulate": "node src/cli.ts",
+    "build": "node scripts/build.mjs",
+    "test:browser": "playwright test",
+    "serve": "node scripts/serve.mjs"
   },
   "repository": {
     "type": "git",
@@ -19,7 +22,10 @@
   },
   "homepage": "https://github.com/BlindAnatomist/spiel-ein-spiel-clue#readme",
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "1.51.1",
     "@types/node": "26.6.3",
+    "esbuild": "^0.28.2",
     "typescript": "7.0.2"
   },
   "private": true,
@@ -31,5 +37,8 @@
     "./referee": "./src/referee.ts",
     "./simulation": "./src/simulation.ts",
     "./content": "./src/content.ts"
+  },
+  "overrides": {
+    "playwright-core": "1.51.1"
   }
 }
